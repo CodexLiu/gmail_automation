@@ -2,50 +2,6 @@
 
 This Google Apps Script analyzes recent Gmail messages (incoming and outgoing) using a Large Language Model (LLM) like OpenAI's GPT or Anthropic's Claude. It extracts actionable tasks relevant to the user and automatically creates them in the user's default Google Tasks list. The script avoids duplicates and attempts to filter out automated emails and completed tasks based on context.
 
-## Pipeline Diagram
-
-```mermaid
-flowchart TD
-    A[Start processEmails Trigger] --> B{Get Today's Date};
-    B --> C{Search Gmail: `after:today`};
-    C --> D{Get User Info Email Name};
-    D --> E{Fetch Threads max 20};
-    E --> F{Get Processed Message IDs};
-    F --> G{Loop Through Threads};
-    G -- No More Threads --> Z[Update Processed IDs & End];
-    G -- Next Thread --> H{Get Latest Message};
-    H --> I{Get Message ID};
-    I --> J{Already Processed?};
-    J -- Yes --> G;
-    J -- No --> K{Extract Details (Subject, Body, From, To, CC)};
-    K --> L{Is User Involved?};
-    L -- No --> M[Log Skip & Add to Processed];
-    M --> G;
-    L -- Yes --> N[Log Processing];
-    N --> O[Call processEmailContent];
-    O --> P[Add ID to Newly Processed];
-    P --> G;
-
-    subgraph processEmailContent
-        direction LR
-        O --> Q{Prepare LLM Prompt};
-        Q --> R[Include Email Data, User Info, Instructions];
-        R --> S{Call LLM API};
-        S --> T{Parse LLM Response (JSON)};
-        T --> U{Is Automated?};
-        U -- Yes --> V[Log Skip & End Subgraph];
-        U -- No --> W{Has Tasks?};
-        W -- No --> X[Log No Tasks & End Subgraph];
-        W -- Yes --> Y{Loop Through Tasks};
-        Y -- No More Tasks --> ZZ[End Subgraph];
-        Y -- Next Task --> AA{Valid Task? (Not completed, not past deadline, from today)};
-        AA -- No --> Y;
-        AA -- Yes --> BB{Prepare Task Data (Title, Notes, Due Date)};
-        BB --> CC{Create Task in Google Tasks};
-        CC --> Y;
-    end
-```
-
 ## Setup
 
 1.  **Create Apps Script Project:** Go to [script.google.com](https://script.google.com/home/start), create a new project, and paste the contents of `code.gs` into the editor, replacing any default code.
