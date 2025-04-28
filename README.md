@@ -1,25 +1,6 @@
 # Gmail Task Automator (Google Apps Script)
 
-This Google Apps Script analyzes incoming and outgoing Gmail messages using a Large Language Model (LLM) like OpenAI's GPT or Anthropic's Claude to identify actionable tasks. It then automatically creates these tasks in your default Google Tasks list.
-
-## Features
-
-*   **Automated Processing:** Runs automatically via a time-driven trigger (e.g., every 5 minutes).
-*   **Targeted Search:** Processes emails received or sent "today".
-*   **User-Centric:** Identifies emails directly involving the script user (sender, recipient, or CC).
-*   **LLM-Powered Analysis:** Sends email content (subject, body, sender, recipients) to an LLM for task extraction based on a detailed prompt.
-*   **Context-Aware:**
-    *   Handles email chains, focusing only on the latest message for task creation.
-    *   Instructs the LLM to identify and filter out tasks that are already marked as completed within the email thread.
-    *   Filters out tasks with deadlines that have already passed.
-    *   Distinguishes between incoming tasks (assigned to the user) and outgoing commitments (made by the user).
-    *   Attempts to identify and ignore automated emails (notifications, alerts, etc.).
-*   **Task Creation:** Creates tasks in the user's primary Google Tasks list, including:
-    *   A concise title (with optional "URGENT" or "OPTIONAL" prefix based on LLM analysis).
-    *   Detailed notes derived from the LLM analysis and email subject.
-    *   Due date, if identified by the LLM.
-*   **Duplicate Prevention:** Stores processed message IDs in User Properties to avoid processing the same email multiple times.
-*   **Robust Logging:** Uses `Logger.log` extensively for debugging and monitoring execution via the Apps Script dashboard.
+This Google Apps Script analyzes recent Gmail messages (incoming and outgoing) using a Large Language Model (LLM) like OpenAI's GPT or Anthropic's Claude. It extracts actionable tasks relevant to the user and automatically creates them in the user's default Google Tasks list. The script avoids duplicates and attempts to filter out automated emails and completed tasks based on context.
 
 ## Pipeline Diagram
 
@@ -27,7 +8,7 @@ This Google Apps Script analyzes incoming and outgoing Gmail messages using a La
 flowchart TD
     A[Start processEmails Trigger] --> B{Get Today's Date};
     B --> C{Search Gmail: `after:today`};
-    C --> D{Get User Info (Email, Name)};
+    C --> D{Get User Info Email Name};
     D --> E{Fetch Threads (max 20)};
     E --> F{Get Processed Message IDs};
     F --> G{Loop Through Threads};
@@ -65,75 +46,27 @@ flowchart TD
     end
 ```
 
-## Setup Instructions
+## Setup
 
-1.  **Create Script:**
-    *   Go to Google Apps Script: [script.google.com](https://script.google.com/home/start)
-    *   Click "New project".
-    *   Give your project a name (e.g., "Gmail Task Automator").
-    *   Delete any default code in the `Code.gs` file.
-    *   Copy the entire content of the `code.gs` file from this repository and paste it into the editor.
+1.  **Create Apps Script Project:** Go to [script.google.com](https://script.google.com/home/start), create a new project, and paste the contents of `code.gs` into the editor, replacing any default code.
+2.  **Enable Services:** In the editor, go to "Services" and add: `Gmail API`, `Google Tasks API`, and `People API`.
+3.  **Configure LLM:**
+    *   Obtain an API key from your LLM provider (OpenAI/Anthropic).
+    *   Go to "Project Settings" > "Script Properties". Add a property (e.g., `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`) with your key as the value.
+    *   **Crucially:** Update the `callOpenAI` function in `code.gs` with your provider's correct API endpoint URL, model name (e.g., `gpt-4.1`, `claude-3-7-sonnet-20250219`), and adjust the request/response handling logic if needed.
+4.  **Set Trigger:** Go to "Triggers", click "Add Trigger", and configure it to run the `processEmails` function on a time-driven basis (e.g., every 5 minutes).
+5.  **Authorize:** Save the trigger or run a function manually. Grant the requested permissions when prompted (you may need to bypass the "unverified app" warning).
 
-2.  **Enable Advanced Google Services:**
-    *   In the script editor, go to "Services" on the left sidebar.
-    *   Find and add the following services:
-        *   **Gmail API:** Click "Add".
-        *   **Google Tasks API:** Click "Add".
-        *   **People API (Google People API):** Click "Add".
-    *   *Note:* Adding these services modifies the `appsscript.json` manifest file automatically.
+## Permissions
 
-3.  **Configure LLM API:**
-    *   Decide which LLM provider you want to use (e.g., OpenAI, Anthropic).
-    *   Obtain an API key from your chosen provider.
-    *   In the script editor, go to "Project Settings" (gear icon on the left sidebar).
-    *   Scroll down to "Script Properties" and click "Edit script properties".
-    *   Click "Add script property".
-        *   **Property:** `OPENAI_API_KEY` (or a relevant name like `ANTHROPIC_API_KEY`)
-        *   **Value:** Paste your actual API key here.
-    *   Click "Save script properties".
-    *   **Important:** Update the `callOpenAI` function in `code.gs`:
-        *   Change the `apiEndpoint` variable to the correct URL for your provider's API (e.g., OpenAI Chat Completions endpoint or Anthropic Messages endpoint).
-        *   Ensure the `model` specified in the `payload` matches a valid model from your provider (e.g., `"gpt-4.1"`, `"claude-3-5-sonnet-20240620"`). Modify the model name to `claude-3-7-sonnet-20250219` for the specific Anthropic model requested if using Anthropic.
-        *   Adjust the `payload` structure and response parsing logic (`jsonResponse.choices[0].message.content` for OpenAI, potentially `jsonResponse.content[0].text` for Anthropic) if necessary to match your chosen LLM provider's API format.
+The script requires permissions to read Gmail, manage Tasks, access user info, make external requests (to the LLM API), store data, and manage triggers. You will be prompted for authorization during setup.
 
-4.  **Set Up Trigger:**
-    *   In the script editor, go to "Triggers" (clock icon on the left sidebar).
-    *   Click "Add Trigger".
-    *   Configure the trigger as follows:
-        *   **Choose which function to run:** `processEmails`
-        *   **Choose which deployment should run:** `Head`
-        *   **Select event source:** `Time-driven`
-        *   **Select type of time based trigger:** `Minutes timer` (or `Hourly timer`)
-        *   **Select minute/hour interval:** `Every 5 minutes` (or your desired frequency - be mindful of quotas)
-        *   **Error notification settings:** Choose your preference.
-    *   Click "Save".
+## Monitoring
 
-5.  **Authorize Script:**
-    *   The first time you save the trigger (or try to run a function manually), Google will ask for authorization.
-    *   Review the permissions requested (it will need access to Gmail, Tasks, external services, etc.).
-    *   If you see a "Google hasn't verified this app" screen, click "Advanced", then "Go to [Your Project Name] (unsafe)".
-    *   Grant the necessary permissions.
-
-## Permissions Required (OAuth Scopes)
-
-The script will request the following permissions during authorization:
-
-*   `https://www.googleapis.com/auth/gmail.readonly`: To read email content.
-*   `https://www.googleapis.com/auth/tasks`: To create tasks in Google Tasks.
-*   `https://www.googleapis.com/auth/script.external_request`: To call the external LLM API.
-*   `https://www.googleapis.com/auth/userinfo.email`: To get the user's email address.
-*   `https://www.googleapis.com/auth/script.storage`: To store processed message IDs.
-*   `https://www.googleapis.com/auth/script.scriptapp`: To manage triggers.
-*   `https://www.googleapis.com/auth/contacts.readonly` or `https://www.googleapis.com/auth/peopleapi.readonly.people.names.read`: To fetch the user's name via the People API (optional enhancement in `getUserInfo`).
-
-## Monitoring and Debugging
-
-*   Check the script's executions and logs via the "Executions" section in the Apps Script editor.
-*   `Logger.log` statements provide detailed information about the script's flow, API calls, and any errors encountered.
+Check script executions and logs in the Apps Script editor under the "Executions" section.
 
 ## Customization
 
-*   **LLM Prompt:** Modify the `prompt` variable within the `processEmailContent` function to tailor the task extraction logic, instructions, or JSON output format.
-*   **Search Query:** Adjust the `searchQuery` in `processEmails` if you need to target different emails (e.g., specific labels, senders).
-*   **Task List:** Currently, the script uses the first (default) task list. Modify the code near `Tasks.Tasklists.list().items` if you want to target a specific task list by name or ID.
-*   **LLM Model:** Update the model name in the `callOpenAI` function payload to use different versions or providers. 
+*   **LLM Behavior:** Modify the `prompt` in `processEmailContent` for different task extraction results.
+*   **Email Scope:** Change the `searchQuery` in `processEmails` to target different emails.
+*   **Target Task List:** Adjust the code near `Tasks.Tasklists.list()` to use a specific Google Tasks list. 
