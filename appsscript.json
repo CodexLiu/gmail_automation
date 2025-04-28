@@ -1,0 +1,37 @@
+{
+    "timeZone": "America/Los_Angeles",
+    "dependencies": {
+      "enabledAdvancedServices": [
+        {
+          "userSymbol": "Tasks",
+          "version": "v1",
+          "serviceId": "tasks"
+        },
+        {
+          "userSymbol": "Gmail",
+          "version": "v1",
+          "serviceId": "gmail"
+        },
+        {
+          "userSymbol": "People",
+          "version": "v1",
+          "serviceId": "peopleapi"
+        }
+      ]
+    },
+    "exceptionLogging": "STACKDRIVER",
+    "runtimeVersion": "V8",
+    "oauthScopes": [
+      "https://www.googleapis.com/auth/gmail.readonly",
+      "https://www.googleapis.com/auth/tasks",
+      "https://www.googleapis.com/auth/script.external_request",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/script.scriptapp",
+      "https://www.googleapis.com/auth/userinfo.profile",
+      "https://www.googleapis.com/auth/drive.readonly"
+    ],
+    "webapp": {
+      "executeAs": "USER_ACCESSING",
+      "access": "DOMAIN"
+    }
+  }
