@@ -9,7 +9,7 @@ flowchart TD
     A[Start processEmails Trigger] --> B{Get Today's Date};
     B --> C{Search Gmail: `after:today`};
     C --> D{Get User Info Email Name};
-    D --> E{Fetch Threads (max 20)};
+    D --> E{Fetch Threads max 20};
     E --> F{Get Processed Message IDs};
     F --> G{Loop Through Threads};
     G -- No More Threads --> Z[Update Processed IDs & End];
